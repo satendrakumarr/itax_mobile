@@ -15,13 +15,14 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useDispatch } from 'react-redux';
 import { logout } from '../loginscreen/authSlice';
+import { AnalogyxBIClient } from '@analogyxbi/connection';
 // import { logoutUser } from '../loginscreen/actions/actions';
 // import { clearAllTabs } from '../welcome/actions/actions';
 
 const windowHeight = Dimensions.get('window').height;
 const windowWidth = Dimensions.get('window').width;
 
-const ProfileSettings = ({isAuthenticated, setIsAuthenticated}) => {
+const ProfileSettings = ({ isAuthenticated, setIsAuthenticated }) => {
   const navigation = useNavigation();
   const dispatch = useDispatch();
 
@@ -38,23 +39,34 @@ const ProfileSettings = ({isAuthenticated, setIsAuthenticated}) => {
     getUrl();
   }, []);
 
+  async function removeItemValue(key) {
+    try {
+      await AsyncStorage.removeItem(key);
+      return true;
+    } catch (exception) {
+      return false;
+    }
+  }
+
   const onLogoutPressed = () => {
     setLoading(true);
-    axios({
-      method: 'get',
-      url: `https://${url}/logout/`,
-      headers: {
-        'Content-Type': 'multipart/form-data',
-        Referer: `https://${url}/logout/`,
-      },
-    })
+    AnalogyxBIClient.get({ endpoint: `/logout/` })
       .then((res) => {
-      //  dispatch(clearAllTabs());
-        dispatch(logout(null)); 
-        setIsAuthenticated(false)
+        dispatch(logout(null));
+        setIsAuthenticated(false);
+        removeItemValue('csrf');
+        removeItemValue('url');
         setLoading(false);
       })
-      .catch((err) => console.log(err), setIndicator(false));
+      .catch((err) => {
+        // alert(JSON.stringify(err));
+        dispatch(logout(null));
+        setIsAuthenticated(false);
+        removeItemValue('csrf');
+        removeItemValue('url');
+        setLoading(false);
+        setIndicator(false);
+      });
   };
 
   return (
